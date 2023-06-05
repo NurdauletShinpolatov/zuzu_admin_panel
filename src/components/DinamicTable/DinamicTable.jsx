@@ -6,52 +6,114 @@ import {
   Tr,
   Th,
   Td,
-  TableContainer
+  TableContainer,
+  Button
 } from '@chakra-ui/react'
-import { branchesServices } from '../../API/branchesServices';
-import { useParams } from 'react-router-dom';
+import { services } from '../../API/services';
+import { Link, useParams } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
 
 const DinamicTable = () => {
-  const [branches, setBranches] = useState([]);
+  const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const {slug} = useParams();
-  const fields = branches?length > 0 branches.[0].keys() : 
 
-  useEffect(() => {
+  const fields = data?.length > 0 ? Object.keys(data[0]) : [];
+
+  const getData = () => {
     setIsLoading(true);
-    branchesServices.getAllBranches(slug).then(res => {
-      setBranches(res.data)
+    services.getAll(slug).then(res => {
+      setData(res.data);
+    }).catch(err => {
+      console.log(err);
     }).finally(() => {
       setIsLoading(false);
     })
-  }, [])
+  }
 
-  console.log(branches);
+  const handleDelete = (id) => {
+    Swal.showLoading()
+    services.delete(slug, id).then(res => {
+      Swal.fire({
+        position: 'center',
+        icon: 'success',
+        title: 'Succesfully deleted!',
+        showConfirmButton: false,
+        timer: 1500
+      })
+      getData();
+    }).catch(err => {
+      console.log(err);
+    }).finally(() => {
+      Swal.hideLoading()
+    })
+  }
+
+  useEffect(() => {
+    getData()
+  }, [])
 
   return (
     <section className=''>
-      <TableContainer>
-        <Table>
-
-          <Thead>
-            {
-                branches?.map(branch => (
-                    <Th key={branch.id}>{branch.name}</Th>
-                ))
-            }
-          </Thead>
-
-          <Tbody>
-            <Tr>
-              <Td>
-
-              </Td>
-            </Tr>
-          </Tbody>
-
-        </Table>
-      </TableContainer>
+      {
+        isLoading ? (
+          <center className='center'>
+            <div class="preloader-wrapper big active">
+              <div class="spinner-layer spinner-blue-only">
+                <div class="circle-clipper left">
+                  <div class="circle"></div>
+                </div><div class="gap-patch">
+                  <div class="circle"></div>
+                </div><div class="circle-clipper right">
+                  <div class="circle"></div>
+                </div>
+              </div>
+            </div>
+          </center>
+        ) : (
+          <TableContainer>
+            <Table>
+    
+              <Thead>           
+                {
+                    fields?.map((field, index) => (
+                        <Th key={index}>{field}</Th>
+                    ))
+                }
+              </Thead>
+    
+              <Tbody>
+                {
+                  data?.map(obj =>(                
+                    <Tr>
+                      {
+                        fields.map((field, index) => (
+                          <Td>
+                            {obj[field].slice(0, 50)}
+                          </Td>
+                        ))
+                      }
+                      <Td>
+                        <Link to={"/edit/"+slug + "/" + obj.id}>
+                          <Button colorScheme='teal' size='sm'>
+                            Edit
+                          </Button>
+                        </Link>
+                        
+                        <Button onClick={()=>{handleDelete(obj.id)}} colorScheme='teal' size='sm'>
+                          Delete
+                        </Button>
+                      </Td>
+                    </Tr>
+                  ))
+                }
+              </Tbody>
+    
+            </Table>
+          </TableContainer>
+        )
+      }
     </section>
   )
 }
