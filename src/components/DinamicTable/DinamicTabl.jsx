@@ -29,7 +29,7 @@ const DinamicTable = () => {
   console.log(branches);
 
   return (
-    <section className=''>
+    <section>
       <TableContainer>
         <Table>
 

@@ -3,24 +3,27 @@ import React, { useEffect, useState } from 'react';
 import styles from "./FormProucts.module.css"
 import { services } from '../../API/services';
 import Swal from 'sweetalert2';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+
 
 const FormProducts = () => {
-
-
   const {slug, id} = useParams();
-  const [isLoading, setIsLoading] = useState(false);
-  const [productData, setProductData] = useState({
-    title: "",
-    image: "",
-    price: "",
-    category: "",
-    description: ""
+  const { register, setValue, handleSubmit, reset } = useForm({
+    defaultValues: {}
   });
+  const navigate = useNavigate();
+
+  const [isLoading, setIsLoading] = useState(false);
 
   const getProduct = () => {
     services.getOne(slug, id).then(res => {
-      setProductData(res.data);
+      const { title, image, price, category, description } = res.data;
+      setValue('title', title);
+      setValue('image', image);
+      setValue('price', price);
+      setValue('category', category);
+      setValue('description', description);
     })
   }
 
@@ -30,11 +33,11 @@ const FormProducts = () => {
     }
   }, [])
   
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const onSubmit = (data) => {
     setIsLoading(true)
+    console.log(data);
     if (id) {
-      services.update(slug, id, productData).then(() => {
+      services.update(slug, id, data).then(() => {
         Swal.fire({
           position: 'center',
           icon: 'success',
@@ -45,24 +48,19 @@ const FormProducts = () => {
       }).catch(err => {
         console.log(err);
       }).finally(() => {
-        setIsLoading(false)
+        setIsLoading(false);
+        navigate('/products');
       })
     } else {
-      services.addNew("products", productData).then(() => {
+      services.addNew("products", data).then(() => {
         Swal.fire({
           position: 'center',
           icon: 'success',
           title: 'The new product has been succesfully added',
           showConfirmButton: false,
           timer: 1500
-        })
-        setProductData({
-          title: "",
-          image: "",
-          price: "",
-          category: "",
-          description: ""
-        })
+        });
+        reset();
       }).catch(err => {
         console.log(err);
       }).finally(() => {
@@ -71,42 +69,32 @@ const FormProducts = () => {
     }
   }
 
-  const handleChangeValue = (prop, value) => {
-    setProductData(old => ({...old, [`${prop}`] : value}))
-  }
-
   return (
     <div>
       <Heading className={styles.heading}>Add new product</Heading>
-    <form onSubmit={handleSubmit} className={styles.form} >
+      <form onSubmit={handleSubmit(onSubmit)} className={styles.form} >
 
-      <label htmlFor="title" className={styles.label} >Product title</label>
-      <Input onChange={(e) => {handleChangeValue("title", e.target.value)}} value={productData.title} name='title' placeholder='Product title...' size='md' />
+        <label htmlFor="title" className={styles.label} >Product title</label>
+        <Input {...register("title")} name='title' placeholder='Product title...' size='md' />
+        
+        <label htmlFor="description" className={styles.label} >Description</label>
+        <Input {...register('description')} placeholder='description...' size='md' />
 
-      <label htmlFor="description" className={styles.label} >Description</label>
-      <Input onChange={(e) => {handleChangeValue("description", e.target.value)}} value={productData.description} name='description' placeholder='description...' size='md' />
+        <label htmlFor="image" className={styles.label} >Image URL</label>
+        <Input {...register('image')} placeholder='URL of the image...' size='md' />
 
-      <label htmlFor="image" className={styles.label} >Image URL</label>
-      <Input onChange={(e) => {handleChangeValue("image", e.target.value)}} value={productData.image} name='image' placeholder='URL of the image...' size='md' />
+        <label htmlFor="price" className={styles.label} >Price</label>
+        <Input {...register('price')} placeholder='Price...' size='md' />
 
-      <label htmlFor="price" className={styles.label} >Price</label>
-      <Input onChange={(e) => {handleChangeValue("price", e.target.value)}} value={productData.price} name='price' placeholder='Price...' size='md' />
+        <label htmlFor="category" className={styles.label} >Category</label>
+        <Input {...register('category')} placeholder='Cattegory...' size='md' />
 
-      <label htmlFor="category" className={styles.label} >Category</label>
-      <Input onChange={(e) => {handleChangeValue("category", e.target.value)}} value={productData.category} name='category' placeholder='Cattegory...' size='md' />
+        <br /><br />
+        <Button isLoading={isLoading} type='submit' colorScheme='teal' size='md'>
+          Save
+        </Button>
 
-      <br /><br />
-      <Button isLoading={isLoading} type='submit' colorScheme='teal' size='md'>
-        Save
-      </Button>
-
-    </form>
-
-      {/* id
-      name
-      address
-      fromtime
-      totime */}
+      </form>
     </div>
   );
 };
